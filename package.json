@@ -1,0 +1,24 @@
+{
+  "name": "powerjoule",
+  "version": "1.0.0",
+  "description": "A powerschool menu bar application written in node",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reteps/PowerJoule.git"
+  },
+  "author": "Peter Stenger",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/reteps/PowerJoule/issues"
+  },
+  "homepage": "https://github.com/reteps/PowerJoule#readme",
+  "dependencies": {
+    "electron": "^7.0.0",
+    "menubar": "^6.0.8",
+    "powerschool-api": "^1.1.0"
+  }
+}

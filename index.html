@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Settings</title>
+</head>
+<body>
+        <input id='url' type="URL" placeholder="powerschool url">
+        <button id="click"> Go </button>
+    <script>
+        const { ipcRenderer } = require('electron')
+        const axios = require('axios')
+        document.getElementById('click').addEventListener('click', clicked)
+        function clicked() {
+            val = document.getElementById('url').value
+            console.log('clicked', val)
+            ipcRenderer.send('url:validate', val)
+        }
+        ipcRenderer.on('url:failure', (e, value) => {
+
+        })
+    </script>
+</body>
+</html>
