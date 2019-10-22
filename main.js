@@ -1,5 +1,10 @@
 const { app, BrowserWindow, Menu, Tray, ipcMain } = require('electron')
-const powerschool = require('powerschool-api')
+
+require('electron-reload')(__dirname, {
+    electron: require(`${__dirname}/node_modules/electron`)
+});
+
+const PowerSchoolAPI = require('powerschool-api')
 let win = null
 let tray = null
 const template = [
@@ -43,8 +48,16 @@ app.on('activate', () => {
     }
 })
 
-ipcMain.on('url:validate', (event, item) => {
-    console.log('Server received', item)
+ipcMain.on('url:validate', (event, url) => {
+    console.log('Server received', url)
+    let api = new PowerSchoolAPI(url)
+    api.setup()
+    .then(api => {
+        event.reply('url:success', 'Success')
+    }).catch(err => {
+        event.reply('url:failure', 'The URL could not be found')
+        console.log(err)
+    })
 })
 function startApplication() {
     createWindow()

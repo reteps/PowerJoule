@@ -2,21 +2,46 @@
 <html lang="en">
 <head>
     <title>Settings</title>
+    <script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
 </head>
 <body>
-        <input id='url' type="URL" placeholder="powerschool url">
-        <button id="click"> Go </button>
+    <div class="container">
+        <label for="url">Powerschool URL</label>
+
+            <input type="text" class="form-control" name='url' id='url'>
+            <small class="form-text">
+                The URL found for powerschool login, e.g. https://pschool.aaps.k12.mi.us/public/home.html
+            </small>
+            <div class="invalid-feedback mb-3">
+                Error
+            </div>
+                <ul class="pagination">
+                    <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                    <li class="page-item"><a class="page-link" id="submit" href="#">Next</a></li>
+                </ul>
+        </div>
+
+    </div>
     <script>
         const { ipcRenderer } = require('electron')
-        const axios = require('axios')
-        document.getElementById('click').addEventListener('click', clicked)
+        document.getElementById('submit').addEventListener('click', clicked)
         function clicked() {
             val = document.getElementById('url').value
             console.log('clicked', val)
+            // Check URL Exists
             ipcRenderer.send('url:validate', val)
         }
         ipcRenderer.on('url:failure', (e, value) => {
-
+            document.getElementsByClassName('invalid-feedback')[0].innerHTML = value
+            document.getElementById('url').classList.add('is-invalid')
+        }).on('url:success', (e, value) => {
+            console.log('was successful')
         })
     </script>
 </body>
