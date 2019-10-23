@@ -7,6 +7,7 @@ require('electron-reload')(__dirname, {
 const PowerSchoolAPI = require('powerschool-api')
 let win = null
 let tray = null
+let api = null
 const template = [
     {
         label: 'Grades',
@@ -50,13 +51,29 @@ app.on('activate', () => {
 
 ipcMain.on('url:validate', (event, url) => {
     console.log('Server received', url)
-    let api = new PowerSchoolAPI(url)
+    api = new PowerSchoolAPI(url)
     api.setup()
     .then(api => {
         event.reply('url:success', 'Success')
     }).catch(err => {
         event.reply('url:failure', 'The URL could not be found')
         console.log(err)
+    })
+})
+
+ipcMain.on('login:validate', (event, data) => {
+    console.log(data.username, data.password)
+    api.login(data.username, data.password).then((student) => {
+        return student.getStudentInfo()
+    }).then(student => {
+        let info = student.student
+        template.push(...[{ label: info.firstName }, {label: `GPA:${info.currentGPA}`}])
+        student.
+        createTray()
+
+    }).catch(err => {
+        console.log(err)
+        event.reply('login:failure', 'Invalid Username or Password')
     })
 })
 function startApplication() {
@@ -73,10 +90,13 @@ function openSettings() {
 }
 function createWindow() {
     win = new BrowserWindow({
+        width: 500,
+        height: 250,
+        maximizable: false,
+        show: false,
         webPreferences: { nodeIntegration: true }
     })
     win.loadFile('index.html')
-    win.hide()
     win.on('closed', () => {
         win = null
     })
