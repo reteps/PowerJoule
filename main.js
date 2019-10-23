@@ -66,27 +66,42 @@ ipcMain.on('url:validate', (event, url) => {
 ipcMain.on('login:validate', (event, data) => {
     console.log(data.username, data.password)
     api.login(data.username, data.password).then((rawStudent) => {
-        return rawStudent.api
-    }).then(data => {
+        return rawStudent.getStudentInfo()
+    }).then(student => {
         // https://aydenp.github.io/PowerSchool-API/PowerSchoolReportingTerm.html
-        console.log(data)
-        // let { student, cache } = data
-        // console
-        // let info = await student
-        // template.push(...[{ label: info.firstName }, {label: `GPA:${info.currentGPA}`}])
-        // // clipboard.writeSync(util.inspect(student))
-        // clipboard.writeSync(cache)
+        termID = {}
         // for (term of student.reportingTerms) {
-        //     // console.log(term.title)
-        //     if (term.id == 8802) {
-        //         // console.log(clipboard.writeSync(util.inspect(term)))
-        //     }
-        //     let grades = term.getFinalGrades()
-        //     for (grade of grades) {
-        //         let course = grade.getCourse()
-        //         // console.log(course.title, grade.percentage)
-        //     }
+        //     termID.push({id: term.id, title: term.title})
         // }
+        console.log('#finakGrades', student.finalGrades.length)
+        let grades = student.finalGrades.filter(val =>  val.percentage != 0)
+        console.log('#grades', grades.length)
+        menu = []
+        terms = {}
+        for (finalGrade of grades) {
+            let term = finalGrade.getReportingTerm()
+
+            if (!(term.title in terms)) {
+                terms[term.title] = {'label': term.title, submenu: []}
+            }
+            console.log(terms[term.title])
+            let course = finalGrade.getCourse()
+
+            terms[term.title].submenu.push({
+                label: `${course.title} - ${finalGrade.percentage}`,
+             submenu: []
+            })
+
+            let assignments = course.getAssignments()
+            for (assignment of assignments) {
+                let grade = assignment.getScore().score
+                console.log(assignment.name, grade)
+            }
+
+            console.log(term.title, finalGrade.percentage, course.title)
+        }
+        console.log(terms)
+        template.push(terms.values())
         createTray()
 
     }).catch(err => {
