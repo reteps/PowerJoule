@@ -5,6 +5,8 @@ require('electron-reload')(__dirname, {
 });
 
 const PowerSchoolAPI = require('powerschool-api')
+const clipboard = require('clipboardy')
+const util = require('util')
 let win = null
 let tray = null
 let api = null
@@ -63,12 +65,28 @@ ipcMain.on('url:validate', (event, url) => {
 
 ipcMain.on('login:validate', (event, data) => {
     console.log(data.username, data.password)
-    api.login(data.username, data.password).then((student) => {
-        return student.getStudentInfo()
-    }).then(student => {
-        let info = student.student
-        template.push(...[{ label: info.firstName }, {label: `GPA:${info.currentGPA}`}])
-        student.
+    api.login(data.username, data.password).then((rawStudent) => {
+        return rawStudent.api
+    }).then(data => {
+        // https://aydenp.github.io/PowerSchool-API/PowerSchoolReportingTerm.html
+        console.log(data)
+        // let { student, cache } = data
+        // console
+        // let info = await student
+        // template.push(...[{ label: info.firstName }, {label: `GPA:${info.currentGPA}`}])
+        // // clipboard.writeSync(util.inspect(student))
+        // clipboard.writeSync(cache)
+        // for (term of student.reportingTerms) {
+        //     // console.log(term.title)
+        //     if (term.id == 8802) {
+        //         // console.log(clipboard.writeSync(util.inspect(term)))
+        //     }
+        //     let grades = term.getFinalGrades()
+        //     for (grade of grades) {
+        //         let course = grade.getCourse()
+        //         // console.log(course.title, grade.percentage)
+        //     }
+        // }
         createTray()
 
     }).catch(err => {
