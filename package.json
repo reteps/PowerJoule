@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder"
   },
   "repository": {
     "type": "git",
@@ -18,14 +19,15 @@
   },
   "homepage": "https://github.com/reteps/PowerJoule#readme",
   "dependencies": {
-    "clipboardy": "^2.1.0",
     "electron-reload": "^1.5.0",
-    "express": "^4.17.1",
+    "electron-webpack": "^2.7.4",
     "jquery": "^3.4.1",
-    "menubar": "^6.0.8",
-    "powerschool-api": "^1.1.0"
+    "jsonfile": "^5.0.0",
+    "powerschool-api": "^1.1.0",
+    "webpack": "^4.41.2"
   },
   "devDependencies": {
+    "electron-builder": "^21.2.0",
     "electron": "^7.0.0"
   }
 }

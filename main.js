@@ -1,44 +1,33 @@
 const { app, BrowserWindow, Menu, Tray, ipcMain } = require('electron')
-
-require('electron-reload')(__dirname, {
-    electron: require(`${__dirname}/node_modules/electron`)
-});
-
 const PowerSchoolAPI = require('powerschool-api')
-const clipboard = require('clipboardy')
-const util = require('util')
+const parser = require('./parser')
+const path = require('path')
+var jsonfile = require('jsonfile')
+
+const configFile = path.join(__dirname, 'config.json')
+const page = path.join(__dirname, 'index.html')
+const iconLocation = path.join(__dirname, 'assets', 'IconTemplate.png')
 let win = null
 let tray = null
 let api = null
 const template = [
     {
-        label: 'Grades',
-        type: 'radio'
+        label: 'Grades', submenu: [
+            { label: 'None', click() { openSettings() } }
+        ]
     },
-    { label: 'Settings', click() { openSettings() } },
-    { label: 'Quit', click() { app.quit() } }
+    { type: 'separator'},
+    { label: 'Account', click() { openSettings() } },
+    { label: 'Refresh', click() { loadConfig() }},
+    { type: 'separator'},
+    { label: 'Quit', click() { app.quit() } },
 ]
 
-if (process.env.NODE_ENV !== 'production') {
-    const devTools = {
-        label: 'Dev Tools',
-        submenu: [
-            {
-                label: 'Toggle',
-                accelerator: process.platform == 'darwin' ? 'Command+I' : 'Ctrl+I',
-                click(item, focused) {
-                    if (focused !== undefined) {
-                        focused.toggleDevTools()
-                    }
-                }
-            },
-            {
-                role: 'reload'
-            }
-        ]
-    }
-    template.push(devTools)
-}
+const passThrough = (fn) => (a) => {
+    fn(a);    // process side-effects
+    return a; // pass the data further
+};
+
 app.on('ready', startApplication)
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -55,63 +44,79 @@ ipcMain.on('url:validate', (event, url) => {
     console.log('Server received', url)
     api = new PowerSchoolAPI(url)
     api.setup()
-    .then(api => {
+        .then(api => {
+        saveData({'url': url})
         event.reply('url:success', 'Success')
     }).catch(err => {
-        event.reply('url:failure', 'The URL could not be found')
+        event.reply('url:failure', err)
         console.log(err)
     })
 })
-
+function saveData(values) {
+    jsonfile.readFile(configFile)
+        .then((data) => {
+            for (val in values) {
+                data[val] = values[val]
+            }
+            return data
+        })
+        .then((updatedData) => {
+            jsonfile.writeFile(configFile, updatedData)
+        }).then((success) => {
+            return null
+        }).catch (err => {
+            console.log(err)
+        })
+}
 ipcMain.on('login:validate', (event, data) => {
-    console.log(data.username, data.password)
-    api.login(data.username, data.password).then((rawStudent) => {
-        return rawStudent.getStudentInfo()
-    }).then(student => {
-        // https://aydenp.github.io/PowerSchool-API/PowerSchoolReportingTerm.html
-        termID = {}
-        // for (term of student.reportingTerms) {
-        //     termID.push({id: term.id, title: term.title})
-        // }
-        console.log('#finakGrades', student.finalGrades.length)
-        let grades = student.finalGrades.filter(val =>  val.percentage != 0)
-        console.log('#grades', grades.length)
-        menu = []
-        terms = {}
-        for (finalGrade of grades) {
-            let term = finalGrade.getReportingTerm()
-
-            if (!(term.title in terms)) {
-                terms[term.title] = {'label': term.title, submenu: []}
-            }
-            console.log(terms[term.title])
-            let course = finalGrade.getCourse()
-
-            terms[term.title].submenu.push({
-                label: `${course.title} - ${finalGrade.percentage}`,
-             submenu: []
-            })
-
-            let assignments = course.getAssignments()
-            for (assignment of assignments) {
-                let grade = assignment.getScore().score
-                console.log(assignment.name, grade)
-            }
-
-            console.log(term.title, finalGrade.percentage, course.title)
-        }
-        console.log(terms)
-        template.push(terms.values())
-        createTray()
-
-    }).catch(err => {
-        console.log(err)
+    api.login(data.username, data.password)
+    .then(student => student.getStudentInfo())
+        .then(passThrough(student => {
+            saveData({ 'user': data.username, 'pass': data.password })
+        }))
+    .then(passThrough((student) => event.reply('login:success', 'Success')))
+    .then(refreshPowerschool)
+    .catch(err => {
         event.reply('login:failure', 'Invalid Username or Password')
     })
 })
+
+let refreshPowerschool = (studentInfo) => {
+        parser.parseStudent(studentInfo)
+        .then(parser.createMenu)
+            .then(menu => {
+            template.shift(1)
+            template.unshift({ label: 'Grades', submenu: menu })
+            updateTray()
+        }).catch(err => {
+            console.log('RefreshPowerschool ERR =>', err)
+        })
+
+}
+const trayPosition = () => {
+    const trayBounds = tray.getBounds()
+    const windowBounds = win.getBounds()
+    const x = Math.round(trayBounds.x + (trayBounds.width / 2) - (windowBounds.width / 2))
+    const y = Math.round(trayBounds.y)
+    return [x, y]
+}
+let loadConfig = () => {
+    jsonfile.readFile(configFile, (err, data) => {
+        if (data.user && data.pass && data.url) {
+            api = new PowerSchoolAPI(data.url)
+            api.setup()
+                .then(() => api.login(data.user, data.pass))
+                .then((student => student.getStudentInfo()))
+                .then(refreshPowerschool)
+            .catch(err => { console.log('Config err =>', err)})
+        }
+    })
+}
 function startApplication() {
     createWindow()
-    createTray()
+    tray = new Tray(iconLocation)
+    loadConfig()
+    updateTray()
     app.dock.hide()
 }
 function openSettings() {
@@ -120,12 +125,16 @@ function openSettings() {
         createWindow()
     }
     win.show()
+    win.setPosition(...trayPosition(), false)
+    win.focus()
 }
 function createWindow() {
     win = new BrowserWindow({
         width: 500,
         height: 250,
-        maximizable: false,
+        fullscreenable: false,
+        frame: false,
+        transparent: true,
         show: false,
         webPreferences: { nodeIntegration: true }
     })
@@ -133,9 +142,10 @@ function createWindow() {
     win.on('closed', () => {
         win = null
     })
+    // loses focus
+    win.on('blur', () => {win.hide()})
 }
-function createTray() {
-    tray = new Tray('assets/iconTemplate.png')
+function updateTray() {
     const myTray = Menu.buildFromTemplate(template)
     tray.setContextMenu(myTray)
 }

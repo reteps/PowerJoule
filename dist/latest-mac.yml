@@ -1,0 +1,12 @@
+version: 1.0.0
+files:
+  - url: powerjoule-1.0.0-mac.zip
+    sha512: 49Zjq6isAVlP0j660EOu8VNxEdC0XAGoLuV0qOCUKWk3ERqqTklrGZcQ0fqahXMfjUTqf+JbL3d2nt9KxlNOKw==
+    size: 75510062
+    blockMapSize: 80335
+  - url: powerjoule-1.0.0.dmg
+    sha512: +YBq6mMTPWr8pZU8oS2gzBuKzpYL+1q9pjIev3c3a5DiqN3LFKBbK1qSjrljWUEwHMnpFL921DpoXOuwndQU6Q==
+    size: 78217674
+path: powerjoule-1.0.0-mac.zip
+sha512: 49Zjq6isAVlP0j660EOu8VNxEdC0XAGoLuV0qOCUKWk3ERqqTklrGZcQ0fqahXMfjUTqf+JbL3d2nt9KxlNOKw==
+releaseDate: '2019-10-24T03:49:29.804Z'
